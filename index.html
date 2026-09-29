@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Calculadora ROI · Bar &amp; Estúdio</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            background: #0f0f12;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #cbd5e1; line-height: 1.5; padding: 20px 16px;
+            display: flex; justify-content: center; min-height: 100vh; -webkit-text-size-adjust: 100%;
+        }
+        .container { max-width: 1100px; width: 100%; }
+        h1 { font-size: 1.6rem; font-weight: 600; color: #e2e8f0; margin-bottom: 4px; letter-spacing: -0.03em; }
+        .subtitle { font-size: 0.9rem; color: #94a3b8; margin-bottom: 24px; border-left: 3px solid #2d3748; padding-left: 14px; }
+        h2 { font-size: 1rem; font-weight: 500; color: #e2e8f0; margin: 24px 0 12px 0; display: flex; align-items: center; gap: 10px; }
+        h2::before { content: ''; width: 5px; height: 5px; background: #4a5568; border-radius: 50%; }
+        .card { background: #16181f; border: 1px solid #23262f; border-radius: 14px; padding: 20px 18px; margin-bottom: 16px; }
+        .card-title { font-size: 0.7rem; font-weight: 500; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-group label { font-size: 0.8rem; color: #94a3b8; }
+        .form-group input {
+            background: #0f0f12; border: 1px solid #2d3748; border-radius: 10px;
+            padding: 10px 14px; color: #e2e8f0; font-size: 0.95rem; font-family: inherit;
+            transition: border-color 0.2s ease; outline: none; width: 100%;
+        }
+        .form-group input:focus { border-color: #4a5568; }
+        .form-group input::placeholder { color: #4a5568; }
+        .form-group input[readonly] { background: #1a1d26; color: #86b89b; font-weight: 600; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .grid-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .tabela-produtos { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        .tabela-produtos th { text-align: left; padding: 8px 4px; color: #64748b; font-weight: 500; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #23262f; }
+        .tabela-produtos td { padding: 8px 4px; border-bottom: 1px solid #1a1d26; color: #cbd5e1; }
+        .tabela-produtos tr:last-child td { border-bottom: none; }
+        .tabela-produtos input { background: #0f0f12; border: 1px solid #2d3748; border-radius: 8px; padding: 8px 10px; color: #e2e8f0; font-size: 0.8rem; font-family: inherit; width: 100%; outline: none; transition: border-color 0.2s ease; }
+        .tabela-produtos input:focus { border-color: #4a5568; }
+        .tabela-produtos .total td { border-top: 1px solid #2d3748; padding-top: 12px; font-weight: 600; color: #e2e8f0; }
+        .dashboard-wrapper { background: #16181f; border: 1px solid #23262f; border-radius: 14px; padding: 16px 12px; margin-bottom: 16px; }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+        .resultado-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+        .resultado-item { background: #0f0f12; border-radius: 10px; padding: 12px 8px; text-align: center; }
+        .resultado-item .label { font-size: 0.6rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .resultado-item .valor { font-size: 1rem; font-weight: 600; color: #e2e8f0; }
+        .resultado-item .valor.positivo { color: #86b89b; }
+        .resultado-item .valor.negativo { color: #c98a8a; }
+        .btn { background: #2d3748; color: #e2e8f0; border: none; padding: 12px 20px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; font-family: inherit; cursor: pointer; transition: background 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 1; min-width: 120px; }
+        .btn:hover { background: #3a4a5e; }
+        .btn-excel { background: #1a3a2a; color: #a7d7b8; }
+        .btn-excel:hover { background: #234d38; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .footer { margin-top: 24px; padding-top: 16px; border-top: 1px solid #1f222b; font-size: 0.7rem; color: #475569; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+        .badge { display: inline-block; background: #1a1d26; padding: 1px 8px; border-radius: 20px; font-size: 0.6rem; color: #64748b; margin-left: 6px; }
+        @media (max-width: 600px) {
+            body { padding: 12px 10px; }
+            h1 { font-size: 1.3rem; }
+            .subtitle { font-size: 0.8rem; margin-bottom: 16px; }
+            .card { padding: 14px 12px; border-radius: 12px; }
+            .grid-3, .grid-4, .grid-2 { grid-template-columns: 1fr 1fr; gap: 8px; }
+            .form-group { margin-bottom: 8px; }
+            .form-group label { font-size: 0.7rem; }
+            .form-group input { padding: 8px 10px; font-size: 0.85rem; }
+            .chart-container { height: 180px; }
+            .resultado-item .valor { font-size: 0.85rem; }
+            .resultado-item .label { font-size: 0.55rem; }
+            .tabela-produtos { font-size: 0.7rem; }
+            .tabela-produtos th { font-size: 0.55rem; padding: 6px 2px; }
+            .tabela-produtos td { padding: 6px 2px; }
+            .tabela-produtos input { padding: 6px 8px; font-size: 0.75rem; }
+            .btn { padding: 10px 14px; font-size: 0.8rem; min-width: 90px; }
+        }
+        @media (min-width: 601px) and (max-width: 900px) {
+            .resultado-grid { grid-template-columns: repeat(3, 1fr); }
+            .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        }
+        @media (min-width: 901px) {
+            body { padding: 30px 24px; }
+            h1 { font-size: 1.8rem; }
+            .chart-container { height: 280px; }
+            .resultado-grid { grid-template-columns: repeat(5, 1fr); }
+            .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+            .card { padding: 24px 28px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora ROI · Bar &amp; Estúdio</h1>
+        <div class="subtitle">Ajuste os valores e veja o dashboard atualizar automaticamente.</div>
+
+        <!-- Dashboard -->
+        <div class="dashboard-wrapper">
+            <div class="card-title">Dashboard · Evolução mensal</div>
+            <div class="chart-container"><canvas id="graficoDashboard"></canvas></div>
+        </div>
+
+        <!-- Alocação -->
+        <h2>Alocação de investimento</h2>
+        <div class="card">
+            <div class="card-title">Produtos sugeridos</div>
+            <table class="tabela-produtos">
+                <thead>
+                    <tr><th>Item</th><th style="width: 100px;">Valor (R$)</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Bebidas iniciais</td><td><input type="number" class="produto" value="1000" min="0" step="50"></td></tr>
+                    <tr><td>Gelo, copos, descartáveis, limpeza</td><td><input type="number" class="produto" value="100" min="0" step="50"></td></tr>
+                    <tr><td>Som (caixa usada, mixer, cabos)</td><td><input type="number" class="produto" value="100" min="0" step="50"></td></tr>
+                    <tr><td>Iluminação (LED, refletores, extensões)</td><td><input type="number" class="produto" value="100" min="0" step="50"></td></tr>
+                    <tr><td>Balcão simples / adaptações</td><td><input type="number" class="produto" value="100" min="0" step="50"></td></tr>
+                    <tr><td>Freezer ou geladeira usada</td><td><input type="number" class="produto" value="100" min="0" step="50"></td></tr>
+                    <tr><td>Caixa, troco, impressos</td><td><input type="number" class="produto" value="50" min="0" step="50"></td></tr>
+                    <tr><td>Reserva de emergência</td><td><input type="number" class="produto" value="500" min="0" step="50"></td></tr>
+                    <tr class="total"><td>Total investimento inicial</td><td><input type="number" id="investimentoTotal" value="2050" readonly></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Dados do negócio -->
+        <h2>Dados do negócio</h2>
+        <div class="card">
+            <div class="card-title">Parâmetros operacionais</div>
+
+            <div class="grid-3">
+                <div class="form-group">
+                    <label for="clientesNoite">Clientes por noite</label>
+                    <input type="number" id="clientesNoite" placeholder="40" value="10" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="noitesSemana">Noites por semana</label>
+                    <input type="number" id="noitesSemana" placeholder="3" value="3" min="1" max="7">
+                </div>
+                <div class="form-group">
+                    <label for="consumoMedio">Consumo médio (R$)</label>
+                    <input type="number" id="consumoMedio" placeholder="30" value="30" min="1" step="5">
+                </div>
+            </div>
+
+            <div class="grid-4">
+                <div class="form-group">
+                    <label for="custosFixos">Custos fixos mensais (R$)</label>
+                    <input type="number" id="custosFixos" placeholder="2500" value="1000" min="0" step="100">
+                </div>
+                <div class="form-group">
+                    <label for="custosVariaveis">Custos variáveis / noite (R$)</label>
+                    <input type="number" id="custosVariaveis" placeholder="350" value="100" min="0" step="50">
+                </div>
+                <div class="form-group">
+                    <label for="lucroLiquidoDiario">Lucro líquido diário <span class="badge">auto</span></label>
+                    <input type="number" id="lucroLiquidoDiario" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="custoTotalNoite">Custo total / noite <span class="badge">auto</span></label>
+                    <input type="number" id="custoTotalNoite" readonly>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <button class="btn" onclick="calcular()">Calcular</button>
+                <button class="btn btn-excel" onclick="exportarExcel()">Baixar Excel</button>
+            </div>
+        </div>
+
+        <!-- Resultados -->
+        <h2>Resultados</h2>
+        <div class="card" id="resultados">
+            <div class="resultado-grid">
+                <div class="resultado-item"><div class="label">Ticket médio</div><div class="valor" id="ticketMedio">—</div></div>
+                <div class="resultado-item"><div class="label">Faturamento mensal</div><div class="valor" id="faturamentoMensal">—</div></div>
+                <div class="resultado-item"><div class="label">Lucro mensal</div><div class="valor" id="lucroMensal">—</div></div>
+                <div class="resultado-item"><div class="label">ROI mensal</div><div class="valor" id="roiMensal">—</div></div>
+                <div class="resultado-item"><div class="label">Payback</div><div class="valor" id="payback">—</div></div>
+                <div class="resultado-item"><div class="label">Lucro anual</div><div class="valor" id="lucroAnual">—</div></div>
+                <div class="resultado-item"><div class="label">ROI anual</div><div class="valor" id="roiAnual">—</div></div>
+                <div class="resultado-item"><div class="label">Clientes/mês</div><div class="valor" id="clientesMes">—</div></div>
+                <div class="resultado-item"><div class="label">Lucro líquido diário</div><div class="valor" id="lucroLiquidoDiarioResultado">—</div></div>
+                <div class="resultado-item"><div class="label">Custo / noite</div><div class="valor" id="custoTotalNoiteResultado">—</div></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div>Calculadora ROI · Bar &amp; Estúdio</div>
+            <div>Dashboard ativo · valores em R$</div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstance = null;
+
+        document.querySelectorAll('.produto').forEach(input => {
+            input.addEventListener('input', () => { atualizarTotalInvestimento(); calcular(); });
+        });
+
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', () => { calcular(); });
+        });
+
+        function atualizarTotalInvestimento() {
+            let total = 0;
+            document.querySelectorAll('.produto').forEach(input => {
+                total += parseFloat(input.value) || 0;
+            });
+            document.getElementById('investimentoTotal').value = total.toFixed(2);
+        }
+
+        function calcular() {
+            const investimento = parseFloat(document.getElementById('investimentoTotal').value) || 0;
+            const clientesNoite = parseFloat(document.getElementById('clientesNoite').value) || 1;
+            const noitesSemana = parseFloat(document.getElementById('noitesSemana').value) || 1;
+            const consumoMedio = parseFloat(document.getElementById('consumoMedio').value) || 0;
+            const custosFixos = parseFloat(document.getElementById('custosFixos').value) || 0;
+            const custosVariaveis = parseFloat(document.getElementById('custosVariaveis').value) || 0;
+
+            const noitesMes = noitesSemana * 4.33;
+            const custoFixoRateado = noitesMes > 0 ? custosFixos / noitesMes : 0;
+            const custoTotalNoite = custoFixoRateado + custosVariaveis;
+
+            const ticketMedio = consumoMedio;
+            const clientesMes = clientesNoite * noitesMes;
+
+            const faturamentoMensal = clientesMes * ticketMedio;
+            const custoVariavelTotal = custosVariaveis * noitesMes;
+            const custoTotalMensal = custosFixos + custoVariavelTotal;
+            const lucroMensal = faturamentoMensal - custoTotalMensal;
+            const lucroLiquidoDiario = noitesMes > 0 ? lucroMensal / noitesMes : 0;
+
+            document.getElementById('custoTotalNoite').value = custoTotalNoite.toFixed(2);
+            document.getElementById('lucroLiquidoDiario').value = lucroLiquidoDiario.toFixed(2);
+
+            const roiMensal = investimento > 0 ? (lucroMensal / investimento) * 100 : 0;
+            const payback = lucroMensal > 0 ? investimento / lucroMensal : Infinity;
+            const lucroAnual = lucroMensal * 12;
+            const roiAnual = investimento > 0 ? (lucroAnual / investimento) * 100 : 0;
+
+            document.getElementById('ticketMedio').textContent = formatarMoeda(ticketMedio);
+            document.getElementById('faturamentoMensal').textContent = formatarMoeda(faturamentoMensal);
+            document.getElementById('lucroMensal').textContent = formatarMoeda(lucroMensal);
+            document.getElementById('lucroMensal').className = 'valor ' + (lucroMensal >= 0 ? 'positivo' : 'negativo');
+            document.getElementById('roiMensal').textContent = roiMensal.toFixed(1).replace('.', ',') + '%';
+            document.getElementById('roiMensal').className = 'valor ' + (roiMensal >= 0 ? 'positivo' : 'negativo');
+            document.getElementById('payback').textContent = payback === Infinity ? '—' : payback.toFixed(1).replace('.', ',') + ' m';
+            document.getElementById('lucroAnual').textContent = formatarMoeda(lucroAnual);
+            document.getElementById('lucroAnual').className = 'valor ' + (lucroAnual >= 0 ? 'positivo' : 'negativo');
+            document.getElementById('roiAnual').textContent = roiAnual.toFixed(1).replace('.', ',') + '%';
+            document.getElementById('roiAnual').className = 'valor ' + (roiAnual >= 0 ? 'positivo' : 'negativo');
+            document.getElementById('clientesMes').textContent = Math.round(clientesMes).toLocaleString('pt-BR');
+            document.getElementById('lucroLiquidoDiarioResultado').textContent = formatarMoeda(lucroLiquidoDiario);
+            document.getElementById('lucroLiquidoDiarioResultado').className = 'valor ' + (lucroLiquidoDiario >= 0 ? 'positivo' : 'negativo');
+            document.getElementById('custoTotalNoiteResultado').textContent = formatarMoeda(custoTotalNoite);
+
+            atualizarGrafico(faturamentoMensal, custoTotalMensal, lucroMensal, lucroAnual, investimento);
+        }
+
+        function formatarMoeda(valor) {
+            return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function atualizarGrafico(faturamento, custo, lucro, lucroAnual, investimento) {
+            const ctx = document.getElementById('graficoDashboard').getContext('2d');
+            const dados = {
+                labels: ['Faturamento', 'Custo total', 'Lucro mensal', 'Lucro anual', 'Investimento'],
+                datasets: [{
+                    label: 'Valores (R$)',
+                    data: [faturamento, custo, lucro, lucroAnual, investimento],
+                    backgroundColor: ['rgba(134, 184, 155, 0.15)','rgba(201, 138, 138, 0.15)','rgba(134, 184, 155, 0.25)','rgba(100, 160, 210, 0.15)','rgba(100, 116, 139, 0.15)'],
+                    borderColor: ['#86b89b','#c98a8a','#86b89b','#64a0d2','#64748b'],
+                    borderWidth: 2, borderRadius: 4, barPercentage: 0.6
+                }]
+            };
+            const config = {
+                type: 'bar', data: dados,
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return 'R$ ' + context.parsed.y.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); } } } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#1f222b' }, ticks: { color: '#64748b', font: { size: 10 }, callback: function(value) { return 'R$ ' + (value / 1000).toFixed(0) + 'k'; } } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 } } }
+                    }
+                }
+            };
+            if (chartInstance) { chartInstance.destroy(); }
+            chartInstance = new Chart(ctx, config);
+        }
+
+        function exportarExcel() {
+            const investimento = parseFloat(document.getElementById('investimentoTotal').value) || 0;
+            const clientesNoite = parseFloat(document.getElementById('clientesNoite').value) || 1;
+            const noitesSemana = parseFloat(document.getElementById('noitesSemana').value) || 1;
+            const consumoMedio = parseFloat(document.getElementById('consumoMedio').value) || 0;
+            const custosFixos = parseFloat(document.getElementById('custosFixos').value) || 0;
+            const custosVariaveis = parseFloat(document.getElementById('custosVariaveis').value) || 0;
+            const custoTotalNoite = parseFloat(document.getElementById('custoTotalNoite').value) || 0;
+            const lucroLiquidoDiario = parseFloat(document.getElementById('lucroLiquidoDiario').value) || 0;
+
+            const ticketMedio = consumoMedio;
+            const noitesMes = noitesSemana * 4.33;
+            const clientesMes = clientesNoite * noitesMes;
+            const faturamentoMensal = clientesMes * ticketMedio;
+            const custoVariavelTotal = custosVariaveis * noitesMes;
+            const custoTotalMensal = custosFixos + custoVariavelTotal;
+            const lucroMensal = faturamentoMensal - custoTotalMensal;
+            const roiMensal = investimento > 0 ? (lucroMensal / investimento) * 100 : 0;
+            const payback = lucroMensal > 0 ? investimento / lucroMensal : '—';
+            const lucroAnual = lucroMensal * 12;
+            const roiAnual = investimento > 0 ? (lucroAnual / investimento) * 100 : 0;
+
+            const produtos = document.querySelectorAll('.produto');
+            const labels = ['Bebidas iniciais','Gelo, copos, descartáveis, limpeza','Som','Iluminação','Balcão simples / adaptações','Freezer ou geladeira usada','Caixa, troco, impressos','Reserva de emergência'];
+
+            let html = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+            <head><meta charset="UTF-8">
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>ROI Bar</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 11pt; }
+                td, th { border: 1px solid #b0b0b0; padding: 6px 10px; }
+                .titulo { background: #1a3a2a; color: #ffffff; font-weight: bold; font-size: 14pt; text-align: center; }
+                .secao { background: #2d3748; color: #ffffff; font-weight: bold; font-size: 12pt; }
+                .cabecalho { background: #e2e8f0; color: #1a202c; font-weight: bold; }
+                .linha-par { background: #f7fafc; }
+                .linha-impar { background: #edf2f7; }
+                .total { background: #fef3c7; font-weight: bold; }
+                .positivo { color: #276749; font-weight: bold; }
+                .negativo { color: #c53030; font-weight: bold; }
+                .valor { text-align: right; }
+            </style></head><body><table>
+                <tr><td colspan="2" class="titulo">Calculadora ROI · Bar &amp; Estúdio</td></tr>
+                <tr><td colspan="2" style="font-size:10pt; color:#555;">Gerado em: ${new Date().toLocaleString('pt-BR')}</td></tr>
+                <tr><td colspan="2"></td></tr>
+                <tr><td colspan="2" class="secao">ALOCAÇÃO DE INVESTIMENTO</td></tr>
+                <tr><td class="cabecalho">Item</td><td class="cabecalho valor">Valor (R$)</td></tr>`;
+
+            produtos.forEach((input, index) => {
+                const classe = index % 2 === 0 ? 'linha-par' : 'linha-impar';
+                html += `<tr><td class="${classe}">${labels[index]}</td><td class="${classe} valor">${(parseFloat(input.value) || 0).toFixed(2).replace('.', ',')}</td></tr>`;
+            });
+
+            html += `
+                <tr><td class="total">Total investimento inicial</td><td class="total valor">${investimento.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td colspan="2"></td></tr>
+                <tr><td colspan="2" class="secao">DADOS OPERACIONAIS</td></tr>
+                <tr><td class="cabecalho">Parâmetro</td><td class="cabecalho valor">Valor</td></tr>
+                <tr><td class="linha-par">Clientes por noite</td><td class="linha-par valor">${clientesNoite}</td></tr>
+                <tr><td class="linha-impar">Noites por semana</td><td class="linha-impar valor">${noitesSemana}</td></tr>
+                <tr><td class="linha-par">Consumo médio por pessoa (R$)</td><td class="linha-par valor">${consumoMedio.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">Custos fixos mensais (R$)</td><td class="linha-impar valor">${custosFixos.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-par">Custos variáveis por noite (R$)</td><td class="linha-par valor">${custosVariaveis.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">Custo total por noite (R$)</td><td class="linha-impar valor">${custoTotalNoite.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-par">Lucro líquido diário (R$)</td><td class="linha-par valor">${lucroLiquidoDiario.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td colspan="2"></td></tr>
+                <tr><td colspan="2" class="secao">RESULTADOS</td></tr>
+                <tr><td class="cabecalho">Indicador</td><td class="cabecalho valor">Valor</td></tr>
+                <tr><td class="linha-par">Ticket médio (R$)</td><td class="linha-par valor">${ticketMedio.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">Clientes por mês</td><td class="linha-impar valor">${Math.round(clientesMes)}</td></tr>
+                <tr><td class="linha-par">Faturamento mensal (R$)</td><td class="linha-par valor">${faturamentoMensal.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">Custo total mensal (R$)</td><td class="linha-impar valor">${custoTotalMensal.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-par">Lucro mensal (R$)</td><td class="linha-par valor ${lucroMensal >= 0 ? 'positivo' : 'negativo'}">${lucroMensal.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">ROI mensal (%)</td><td class="linha-impar valor ${roiMensal >= 0 ? 'positivo' : 'negativo'}">${roiMensal.toFixed(1).replace('.', ',')}%</td></tr>
+                <tr><td class="linha-par">Payback (meses)</td><td class="linha-par valor">${payback === '—' ? '—' : payback.toFixed(1).replace('.', ',')}</td></tr>
+                <tr><td class="linha-impar">Lucro anual (R$)</td><td class="linha-impar valor ${lucroAnual >= 0 ? 'positivo' : 'negativo'}">${lucroAnual.toFixed(2).replace('.', ',')}</td></tr>
+                <tr><td class="linha-par">ROI anual (%)</td><td class="linha-par valor ${roiAnual >= 0 ? 'positivo' : 'negativo'}">${roiAnual.toFixed(1).replace('.', ',')}%</td></tr>
+            </table></body></html>`;
+
+            const blob = new Blob(["\uFEFF" + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.download = 'roi_bar_estudio.xls';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        window.onload = () => { atualizarTotalInvestimento(); calcular(); };
+    </script>
+</body>
+</html>
